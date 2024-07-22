@@ -1,0 +1,18 @@
+{
+    "label": "env:prod,release",
+    "group-pull-request-title-pattern": "chore: release ${version} to prod",
+    "pull-request-title-pattern": "chore${scope}: release${component} ${version} to prod",
+    "separate-pull-requests": true,
+    "bootstrap-sha": "6684ca39562d5abc66e51e3a848973d4ead6179d",
+    "prerelease": true,
+    "pull-request-footer": "Note: Release pull requests needs approval to continue the CI pipeline.",
+    "packages": {
+      "test": {
+        "bump-minor-pre-major": false,
+        "bump-patch-for-minor-pre-major": false,
+        "prerelease": true,
+        "release-type": "python"
+      },
+  },
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+  }
