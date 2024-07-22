@@ -1,0 +1,6 @@
+feature: ["feat/*", "feat(*)/*", ""]
+fix: ["fix/*", "fix(*)/*"]
+hotfix: hotfix/*
+security: security/*
+chore: ["chore/*", "chore(*)*", "deps", "dependabot/*", "test/*", "test(*)*"]
+skip-changelog: ["proposal/*"]
