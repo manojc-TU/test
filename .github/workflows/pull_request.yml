@@ -1,0 +1,54 @@
+name: Pull Requests
+
+on:
+  pull_request:
+    types: ["opened", "edited", "reopened", "synchronize"]
+  pull_request_review:
+
+# Once permissions is set, all other scopes not listed are set to none
+# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#overview
+permissions:
+  actions: read
+  pull-requests: read
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: Pull Request Title Check
+    steps:
+      - uses: actions/checkout@v4
+      - name: Feature Development Branch Check
+        id: feature_check
+        uses: thehanimo/pr-title-checker@v1.4.2
+        if: github.base_ref != 'production'
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          pass_on_octokit_error: false
+          configuration_path: ".github/pull_request_title_config.json"
+
+      - name: Fail if skipped all
+        if: steps.feature_check.conclusion=='skipped'
+        run: |
+          echo "The type of your pull request is unknown. Set correct branch prefix for feature or hotfix. See https://github.com/taskusinc/skye/blob/master/CONTRIBUTING.md#hotfix-pull-requests-to-production-branch"
+          exit 1
+
+  labeler:
+    name: Pull Request Labeler
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: TimonVS/pr-labeler-action@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  check-release-please-manifest:
+    name: Check Release Please Manifest file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify JSON file if valid
+        run: |
+          cat .release-please-manifest.json | jq -re
