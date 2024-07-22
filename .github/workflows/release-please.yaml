@@ -1,0 +1,56 @@
+name: Release Please
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      paths_released: ${{ steps.release.outputs.paths_released }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      all: ${{ toJson(steps.release.outputs) }}
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: ${{ github.ref_name }}
+          config-file:  ${{ github.ref_name == 'master' && 'release-please-config.json' }}
+          manifest-file: .release-please-manifest.json
+
+      - run: |
+          echo 'Release created: ${{ steps.release.outputs.release_created }}'
+          echo 'Paths released: ${{ steps.release.outputs.paths_released }}'
+          echo 'PRs created: ${{ steps.release.outputs.prs_created }}'
+          echo '${{ toJSON(steps.release.outputs) }}'
+
+  pre-release-workaround:
+    needs: [release-please]
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.paths_released != '[]' && needs.release-please.outputs.paths_released != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        path: ${{ fromJSON(needs.release-please.outputs.paths_released) }}
+    steps:
+      - name: Force set release as pre-release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const all_released = ${{ needs.release-please.outputs.all }}
+            const { data: release } = await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: all_released["${{ format('{0}--id', matrix.path) }}"],
+              prerelease: true
+            })
+        continue-on-error: true
